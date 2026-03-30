@@ -1,4 +1,5 @@
 .DS_Store
+<<<<<<< HEAD
 
 # Maven build output
 **/target/
@@ -13,3 +14,5 @@
 
 # Claude Code
 .claude/
+=======
+>>>>>>> origin/main

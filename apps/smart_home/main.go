@@ -32,12 +32,15 @@ func main() {
 	temperatureService := services.NewTemperatureService(temperatureAPIURL)
 	log.Printf("Temperature service initialized with API URL: %s\n", temperatureAPIURL)
 
+<<<<<<< HEAD
 	// Initialize messaging service (RabbitMQ)
 	amqpURL := getEnv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
 	exchange := getEnv("RABBITMQ_EXCHANGE", "warmhouse.events")
 	messagingService := services.NewMessagingService(amqpURL, exchange)
 	defer messagingService.Close()
 
+=======
+>>>>>>> origin/main
 	// Initialize router
 	router := gin.Default()
 
@@ -52,7 +55,11 @@ func main() {
 	apiRoutes := router.Group("/api/v1")
 
 	// Register sensor routes
+<<<<<<< HEAD
 	sensorHandler := handlers.NewSensorHandler(database, temperatureService, messagingService)
+=======
+	sensorHandler := handlers.NewSensorHandler(database, temperatureService)
+>>>>>>> origin/main
 	sensorHandler.RegisterRoutes(apiRoutes)
 
 	// Start server

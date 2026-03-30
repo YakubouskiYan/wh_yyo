@@ -18,6 +18,7 @@ import (
 type SensorHandler struct {
 	DB                 *db.DB
 	TemperatureService *services.TemperatureService
+<<<<<<< HEAD
 	Messaging          *services.MessagingService
 }
 
@@ -27,6 +28,15 @@ func NewSensorHandler(db *db.DB, temperatureService *services.TemperatureService
 		DB:                 db,
 		TemperatureService: temperatureService,
 		Messaging:          messaging,
+=======
+}
+
+// NewSensorHandler creates a new SensorHandler
+func NewSensorHandler(db *db.DB, temperatureService *services.TemperatureService) *SensorHandler {
+	return &SensorHandler{
+		DB:                 db,
+		TemperatureService: temperatureService,
+>>>>>>> origin/main
 	}
 }
 
@@ -61,7 +71,10 @@ func (h *SensorHandler) GetSensors(c *gin.Context) {
 				sensors[i].Value = tempData.Value
 				sensors[i].Status = tempData.Status
 				sensors[i].LastUpdated = tempData.Timestamp
+<<<<<<< HEAD
 				sensors[i].Location = tempData.Location
+=======
+>>>>>>> origin/main
 				log.Printf("Updated temperature data for sensor %d from external API", sensor.ID)
 			} else {
 				log.Printf("Failed to fetch temperature data for sensor %d: %v", sensor.ID, err)
@@ -94,7 +107,10 @@ func (h *SensorHandler) GetSensorByID(c *gin.Context) {
 			sensor.Value = tempData.Value
 			sensor.Status = tempData.Status
 			sensor.LastUpdated = tempData.Timestamp
+<<<<<<< HEAD
 			sensor.Location = tempData.Location
+=======
+>>>>>>> origin/main
 			log.Printf("Updated temperature data for sensor %d from external API", sensor.ID)
 		} else {
 			log.Printf("Failed to fetch temperature data for sensor %d: %v", sensor.ID, err)
@@ -207,20 +223,26 @@ func (h *SensorHandler) UpdateSensorValue(c *gin.Context) {
 		return
 	}
 
+<<<<<<< HEAD
 	sensor, err := h.DB.GetSensorByID(context.Background(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Sensor not found"})
 		return
 	}
 
+=======
+>>>>>>> origin/main
 	err = h.DB.UpdateSensorValue(context.Background(), id, request.Value, request.Status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+<<<<<<< HEAD
 	// Publish telemetry event to RabbitMQ
 	h.Messaging.PublishTelemetryReading(id, request.Value, sensor.Unit)
 
+=======
+>>>>>>> origin/main
 	c.JSON(http.StatusOK, gin.H{"message": "Sensor value updated successfully"})
 }

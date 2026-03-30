@@ -4,12 +4,23 @@ FROM golang:1.22-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+<<<<<<< HEAD
 # Copy source (tidy will resolve any new deps)
 COPY go.mod ./
 COPY . .
 
 # Resolve dependencies (updates go.sum inside the build container)
 RUN go mod tidy
+=======
+# Copy go.mod and go.sum files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the source code
+COPY . .
+>>>>>>> origin/main
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -o smarthome
