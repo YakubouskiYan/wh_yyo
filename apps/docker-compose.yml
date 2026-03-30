@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 services:
 
   # ─────────────────────────────────────────────
@@ -56,18 +55,6 @@ services:
     restart: unless-stopped
     networks:
       - smarthome-network
-=======
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: smarthome-postgres
-  ## тут нужно добавить настройки
-
-  temperature-api:
-  ## тут нужно добавить приложение
->>>>>>> origin/main
 
   app:
     build:
@@ -77,28 +64,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-<<<<<<< HEAD
       rabbitmq:
         condition: service_healthy
-=======
->>>>>>> origin/main
       temperature-api:
         condition: service_started
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/smarthome
       - TEMPERATURE_API_URL=http://temperature-api:8081
-<<<<<<< HEAD
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - RABBITMQ_EXCHANGE=warmhouse.events
-=======
->>>>>>> origin/main
     ports:
       - "8080:8080"
     restart: unless-stopped
     networks:
       - smarthome-network
 
-<<<<<<< HEAD
   # ─────────────────────────────────────────────
   # New microservices
   # ─────────────────────────────────────────────
@@ -153,15 +133,9 @@ services:
     networks:
       - smarthome-network
 
-=======
->>>>>>> origin/main
 volumes:
   postgres_data:
 
 networks:
   smarthome-network:
-<<<<<<< HEAD
     driver: bridge
-=======
-    driver: bridge
->>>>>>> origin/main
