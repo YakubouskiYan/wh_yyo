@@ -1,0 +1,38 @@
+@startuml C4_Containers_Warmhouse
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Container Diagram — Warmhouse (To-Be)
+
+Person(user, "Пользователь", "Владелец умного дома.\nУправляет датчиками,\nпросматривает телеметрию.")
+
+Person(installer, "Специалист по установке", "Выездной сотрудник.\nРегистрирует IoT-устройства\nчерез Device Service.")
+
+System_Boundary(warmhouse, "Warmhouse Platform") {
+
+    Container(monolith, "Smart Home Monolith", "Go 1.23 / Gin", "CRUD датчиков,\nмониторинг температуры.\nПорт 8080")
+
+    Container(tempApi, "Temperature API", "Python 3.12 / Flask", "Mock-сервис температуры.\nВозвращает случайное значение\nпо location/sensor_id.\nПорт 8081")
+
+    Container(deviceService, "Device Service", "Java 21 / Spring Boot", "Регистрация и управление\nIoT-устройствами.\nПорт 8082")
+
+    Container(telemetryService, "Telemetry Service", "Java 21 / Spring Boot", "Сбор, хранение и отдача\nпоказаний датчиков.\nПорт 8083")
+
+    ContainerDb(postgres, "PostgreSQL 16", "Реляционная СУБД", "Три схемы:\npublic — sensors (монолит)\ndevice_service — devices\ntelemetry_service — readings")
+
+    ContainerQueue(rabbitmq, "RabbitMQ 3.12", "Message Broker", "Exchange: warmhouse.events (topic)\nМаршрутизация событий\nмежду сервисами")
+}
+
+Rel(user, monolith, "Управляет датчиками,\nпросматривает температуру", "REST HTTP / JSON")
+Rel(installer, deviceService, "Регистрирует устройства", "REST HTTP / JSON")
+
+Rel(monolith, tempApi, "Запрашивает актуальные\nпоказания температуры", "REST HTTP / JSON")
+Rel(monolith, postgres, "Читает / пишет таблицу sensors", "TCP / SQL (pgx v5)")
+
+Rel(deviceService, postgres, "Читает / пишет device_service.devices", "TCP / SQL (JPA / Hibernate)")
+Rel(deviceService, rabbitmq, "Публикует device.registered,\ndevice.status_changed", "AMQP")
+
+Rel(telemetryService, postgres, "Читает / пишет telemetry_service.readings", "TCP / SQL (JPA / Hibernate)")
+Rel(rabbitmq, telemetryService, "Доставляет telemetry.reading\nв очередь telemetry.readings.queue", "AMQP")
+
+@enduml

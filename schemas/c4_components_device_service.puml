@@ -1,0 +1,32 @@
+@startuml C4_Components_DeviceService
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram — Device Service
+
+Container_Ext(client, "API Client", "Пользователь / специалист\nчерез REST HTTP")
+ContainerDb_Ext(postgres, "PostgreSQL", "device_service.devices")
+ContainerQueue_Ext(rabbitmq, "RabbitMQ", "Exchange: warmhouse.events")
+
+Container_Boundary(ds, "Device Service  (Java 21 / Spring Boot, порт 8082)") {
+
+    Component(controller, "DeviceController", "Spring @RestController", "REST API:\nGET  /api/v1/devices\nGET  /api/v1/devices/{id}\nPOST /api/v1/devices\nPUT  /api/v1/devices/{id}\nDELETE /api/v1/devices/{id}")
+
+    Component(service, "DeviceService", "Spring @Service", "Бизнес-логика:\n- register() — создаёт устройство,\n  проверяет уникальность serial_number\n- update() — обновляет поля и статус\n- delete() — удаляет по id\n- findAll() / findById()")
+
+    Component(repository, "DeviceRepository", "Spring Data JPA\n@Repository", "CRUD + фильтрация:\nfindByHomeId, findByRoomId,\nfindByDeviceType, findByStatus,\nexistsBySerialNumber")
+
+    Component(publisher, "DeviceEventPublisher", "Spring @Component", "Публикует события в RabbitMQ:\n- device.registered\n- device.status_changed")
+
+    Component(rabbitConfig, "RabbitMQConfig", "Spring @Configuration", "Создаёт TopicExchange\n'warmhouse.events',\nRabbitTemplate,\nJackson2JsonMessageConverter")
+}
+
+Rel(client, controller, "HTTP-запросы", "REST / JSON")
+Rel(controller, service, "Вызывает методы сервиса")
+Rel(service, repository, "Читает / пишет Device")
+Rel(service, publisher, "Вызывает publish при\nрегистрации и смене статуса")
+Rel(repository, postgres, "SQL через Hibernate", "JPA / JDBC")
+Rel(publisher, rabbitmq, "Отправляет JSON-событие", "AMQP")
+Rel(rabbitConfig, publisher, "Предоставляет RabbitTemplate")
+
+@enduml

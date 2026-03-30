@@ -1,0 +1,277 @@
+openapi: 3.0.3
+info:
+  title: Device Service API
+  description: REST API для регистрации и управления IoT-устройствами умного дома
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082
+    description: Local development
+
+paths:
+
+  /api/v1/devices:
+    get:
+      summary: Получить список устройств
+      operationId: listDevices
+      parameters:
+        - name: homeId
+          in: query
+          description: Фильтр по ID дома
+          schema:
+            type: string
+            example: "home-42"
+        - name: roomId
+          in: query
+          description: Фильтр по ID комнаты
+          schema:
+            type: string
+            example: "living-room"
+        - name: deviceType
+          in: query
+          description: Фильтр по типу устройства
+          schema:
+            type: string
+            example: "thermostat"
+        - name: status
+          in: query
+          description: Фильтр по статусу
+          schema:
+            type: string
+            enum: [offline, online, error]
+      responses:
+        '200':
+          description: Список устройств
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Device'
+              example:
+                - id: 1
+                  name: "Термостат гостиная"
+                  serialNumber: "SN-001-THERM"
+                  deviceType: "thermostat"
+                  homeId: "home-42"
+                  roomId: "living-room"
+                  firmwareVersion: "1.2.3"
+                  status: "online"
+                  registeredAt: "2026-03-18T10:00:00Z"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Зарегистрировать новое устройство
+      operationId: registerDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDeviceRequest'
+            example:
+              name: "Термостат гостиная"
+              serialNumber: "SN-001-THERM"
+              deviceType: "thermostat"
+              homeId: "home-42"
+              roomId: "living-room"
+              firmwareVersion: "1.2.3"
+      responses:
+        '201':
+          description: Устройство успешно зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "name: must not be blank"
+        '409':
+          description: Устройство с таким serial_number уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Device with serial number already exists: SN-001-THERM"
+
+  /api/v1/devices/{id}:
+    get:
+      summary: Получить устройство по ID
+      operationId: getDevice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        '200':
+          description: Устройство найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Устройство не найдено
+
+    put:
+      summary: Обновить параметры устройства
+      operationId: updateDevice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceRequest'
+            example:
+              status: "online"
+              firmwareVersion: "1.3.0"
+      responses:
+        '200':
+          description: Устройство обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Устройство не найдено
+
+    delete:
+      summary: Удалить устройство
+      operationId: deleteDevice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        '204':
+          description: Устройство удалено
+        '404':
+          description: Устройство не найдено
+
+  /api/v1/devices/health:
+    get:
+      summary: Проверка работоспособности сервиса
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Сервис работает
+          content:
+            application/json:
+              example:
+                status: "ok"
+                service: "device-service"
+
+components:
+  schemas:
+
+    Device:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Термостат гостиная"
+        serialNumber:
+          type: string
+          example: "SN-001-THERM"
+        deviceType:
+          type: string
+          example: "thermostat"
+        homeId:
+          type: string
+          example: "home-42"
+        roomId:
+          type: string
+          example: "living-room"
+        firmwareVersion:
+          type: string
+          example: "1.2.3"
+        status:
+          type: string
+          enum: [offline, online, error]
+          example: "online"
+        registeredAt:
+          type: string
+          format: date-time
+          example: "2026-03-18T10:00:00Z"
+
+    CreateDeviceRequest:
+      type: object
+      required:
+        - name
+        - serialNumber
+        - deviceType
+      properties:
+        name:
+          type: string
+          example: "Термостат гостиная"
+        serialNumber:
+          type: string
+          example: "SN-001-THERM"
+        deviceType:
+          type: string
+          example: "thermostat"
+        homeId:
+          type: string
+          example: "home-42"
+        roomId:
+          type: string
+          example: "living-room"
+        firmwareVersion:
+          type: string
+          example: "1.2.3"
+
+    UpdateDeviceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Термостат спальня"
+        homeId:
+          type: string
+          example: "home-42"
+        roomId:
+          type: string
+          example: "bedroom"
+        firmwareVersion:
+          type: string
+          example: "1.3.0"
+        status:
+          type: string
+          enum: [offline, online, error]
+          example: "online"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Device with serial number already exists: SN-001-THERM"

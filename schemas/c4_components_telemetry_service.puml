@@ -1,0 +1,34 @@
+@startuml C4_Components_TelemetryService
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram — Telemetry Service
+
+Container_Ext(client, "API Client", "Пользователь / внешний сервис\nчерез REST HTTP")
+ContainerDb_Ext(postgres, "PostgreSQL", "telemetry_service.readings")
+ContainerQueue_Ext(rabbitmq, "RabbitMQ", "Queue: telemetry.readings.queue")
+
+Container_Boundary(ts, "Telemetry Service  (Java 21 / Spring Boot, порт 8083)") {
+
+    Component(controller, "TelemetryController", "Spring @RestController", "REST API:\nPOST /api/v1/telemetry\nGET  /api/v1/telemetry/{sensorId}/latest\nGET  /api/v1/telemetry/{sensorId}/history\n       ?from=&to=&limit=")
+
+    Component(health, "HealthController", "Spring @RestController", "GET /health\nВозвращает статус сервиса")
+
+    Component(service, "TelemetryServiceImpl", "Spring @Service", "Бизнес-логика:\n- ingest() — сохраняет показание\n- getLatest() — последнее по sensorId\n- getHistory() — история с фильтрами\n  и статистикой avg / min / max")
+
+    Component(repository, "TelemetryReadingRepository", "Spring Data JPA\n@Repository", "findFirstBySensorIdOrderByRecordedAtDesc()\nfindHistory() — JPQL с Pageable\nи опциональными фильтрами from/to")
+
+    Component(consumer, "TelemetryEventConsumer", "Spring AMQP\n@RabbitListener", "Слушает telemetry.readings.queue.\nДесериализует TelemetryEvent\nи вызывает service.ingest()")
+
+    Component(rabbitConfig, "RabbitMQConfig", "Spring @Configuration", "Создаёт TopicExchange,\nQueue, Binding (routing key: telemetry.reading),\nJackson2JsonMessageConverter")
+}
+
+Rel(client, controller, "HTTP-запросы", "REST / JSON")
+Rel(controller, service, "Вызывает методы сервиса")
+Rel(service, repository, "Читает / пишет TelemetryReading")
+Rel(repository, postgres, "SQL через Hibernate", "JPA / JDBC")
+Rel(rabbitmq, consumer, "Доставляет TelemetryEvent", "AMQP / JSON")
+Rel(consumer, service, "Вызывает ingest()")
+Rel(rabbitConfig, consumer, "Настраивает listener и конвертер")
+
+@enduml

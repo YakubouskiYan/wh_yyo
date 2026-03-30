@@ -1,0 +1,185 @@
+asyncapi: 2.6.0
+info:
+  title: Warmhouse Platform Events
+  version: 1.0.0
+  description: |
+    Асинхронные события платформы Warmhouse через RabbitMQ.
+    Exchange: warmhouse.events (type: topic, durable: true)
+
+servers:
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672
+    protocol: amqp
+    description: RabbitMQ брокер сообщений
+
+channels:
+
+  device.registered:
+    description: |
+      Routing key: device.registered
+      Публикует: Device Service
+      Потребители: любые заинтересованные сервисы
+    publish:
+      summary: Устройство зарегистрировано в системе
+      operationId: publishDeviceRegistered
+      message:
+        $ref: '#/components/messages/DeviceRegistered'
+
+  device.status_changed:
+    description: |
+      Routing key: device.status_changed
+      Публикует: Device Service при изменении поля status
+      Потребители: любые заинтересованные сервисы
+    publish:
+      summary: Статус устройства изменился
+      operationId: publishDeviceStatusChanged
+      message:
+        $ref: '#/components/messages/DeviceStatusChanged'
+
+  telemetry.reading:
+    description: |
+      Routing key: telemetry.reading
+      Queue: telemetry.readings.queue (durable, non-exclusive)
+      Публикует: внешние источники или другие сервисы
+      Подписывается: Telemetry Service — сохраняет показание в БД
+    subscribe:
+      summary: Новое показание датчика для сохранения в телеметрию
+      operationId: consumeTelemetryReading
+      message:
+        $ref: '#/components/messages/TelemetryReading'
+
+components:
+  messages:
+
+    DeviceRegistered:
+      name: DeviceRegistered
+      contentType: application/json
+      payload:
+        type: object
+        required:
+          - eventType
+          - deviceId
+          - serialNumber
+          - deviceType
+          - status
+          - timestamp
+        properties:
+          eventType:
+            type: string
+            const: device.registered
+            example: "device.registered"
+          deviceId:
+            type: integer
+            format: int64
+            example: 1
+          name:
+            type: string
+            example: "Термостат гостиная"
+          serialNumber:
+            type: string
+            example: "SN-001-THERM"
+          deviceType:
+            type: string
+            example: "thermostat"
+          homeId:
+            type: string
+            example: "home-42"
+          roomId:
+            type: string
+            example: "living-room"
+          status:
+            type: string
+            example: "offline"
+          timestamp:
+            type: string
+            format: date-time
+            example: "2026-03-24T10:00:00Z"
+      examples:
+        - name: Пример регистрации термостата
+          payload:
+            eventType: "device.registered"
+            deviceId: 1
+            name: "Термостат гостиная"
+            serialNumber: "SN-001-THERM"
+            deviceType: "thermostat"
+            homeId: "home-42"
+            roomId: "living-room"
+            status: "offline"
+            timestamp: "2026-03-24T10:00:00Z"
+
+    DeviceStatusChanged:
+      name: DeviceStatusChanged
+      contentType: application/json
+      payload:
+        type: object
+        required:
+          - eventType
+          - deviceId
+          - previousStatus
+          - newStatus
+          - timestamp
+        properties:
+          eventType:
+            type: string
+            const: device.status_changed
+            example: "device.status_changed"
+          deviceId:
+            type: integer
+            format: int64
+            example: 1
+          previousStatus:
+            type: string
+            example: "offline"
+          newStatus:
+            type: string
+            example: "online"
+          timestamp:
+            type: string
+            format: date-time
+            example: "2026-03-24T10:05:00Z"
+      examples:
+        - name: Устройство вышло в онлайн
+          payload:
+            eventType: "device.status_changed"
+            deviceId: 1
+            previousStatus: "offline"
+            newStatus: "online"
+            timestamp: "2026-03-24T10:05:00Z"
+
+    TelemetryReading:
+      name: TelemetryReading
+      contentType: application/json
+      payload:
+        type: object
+        required:
+          - eventType
+          - sensorId
+          - value
+          - timestamp
+        properties:
+          eventType:
+            type: string
+            const: telemetry.reading
+            example: "telemetry.reading"
+          sensorId:
+            type: integer
+            example: 1
+          value:
+            type: number
+            format: double
+            example: 22.5
+          unit:
+            type: string
+            example: "celsius"
+          timestamp:
+            type: string
+            format: date-time
+            example: "2026-03-24T10:00:00Z"
+      examples:
+        - name: Показание температуры
+          payload:
+            eventType: "telemetry.reading"
+            sensorId: 1
+            value: 22.5
+            unit: "celsius"
+            timestamp: "2026-03-24T10:00:00Z"

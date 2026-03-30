@@ -1,0 +1,15 @@
+.DS_Store
+
+# Maven build output
+**/target/
+
+# Python
+**/__pycache__/
+**/*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/

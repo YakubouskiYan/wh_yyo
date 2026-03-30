@@ -1,0 +1,524 @@
+{
+    "info": {
+        "_postman_id": "f8e3a123-4567-89ab-cdef-0123456789ab",
+        "name": "Warmhouse — All Services",
+        "description": "Полная коллекция для ручного тестирования всех сервисов: монолит, device-service, telemetry-service, temperature-api",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "monolith",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "temperature_api",
+            "value": "http://localhost:8081",
+            "type": "string"
+        },
+        {
+            "key": "device_service",
+            "value": "http://localhost:8082",
+            "type": "string"
+        },
+        {
+            "key": "telemetry_service",
+            "value": "http://localhost:8083",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "1. Монолит (smart_home :8080)",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{monolith}}/health",
+                            "host": ["{{monolith}}"],
+                            "path": ["health"]
+                        },
+                        "description": "Проверка доступности монолита"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Sensors",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors"]
+                        },
+                        "description": "Получить все сенсоры. Для type=temperature значения value/status/location подтягиваются из temperature-api в реальном времени"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Sensor by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors/1",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors", "1"]
+                        },
+                        "description": "Получить сенсор по ID. Для temperature-сенсоров данные обновляются из temperature-api"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Temperature by Location",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors/temperature/Kitchen",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors", "temperature", "Kitchen"]
+                        },
+                        "description": "Получить температуру по названию локации через монолит → temperature-api. Возможные значения: Living Room, Bedroom, Kitchen"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Temperature by Location — Living Room",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors/temperature/Living Room",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors", "temperature", "Living Room"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Sensor",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Kitchen Temperature\",\n    \"type\": \"temperature\",\n    \"location\": \"Kitchen\",\n    \"unit\": \"°C\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors"]
+                        },
+                        "description": "Создать новый сенсор"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Sensor",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Living Room Temperature Updated\",\n    \"type\": \"temperature\",\n    \"location\": \"Living Room\",\n    \"unit\": \"°C\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors/1",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors", "1"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Sensor Value (triggers RabbitMQ event)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"value\": 22.5,\n    \"status\": \"active\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors/1/value",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors", "1", "value"]
+                        },
+                        "description": "Обновить значение сенсора. Публикует событие telemetry.reading в RabbitMQ → telemetry-service сохраняет показание"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Sensor",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors/1",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors", "1"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "2. Temperature API (:8081)",
+            "item": [
+                {
+                    "name": "Get Temperature by Sensor ID (path)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperature_api}}/temperature/1",
+                            "host": ["{{temperature_api}}"],
+                            "path": ["temperature", "1"]
+                        },
+                        "description": "Получить случайную температуру по sensor_id. Маппинг: 1=Living Room, 2=Bedroom, 3=Kitchen"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Temperature by Sensor ID=2",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperature_api}}/temperature/2",
+                            "host": ["{{temperature_api}}"],
+                            "path": ["temperature", "2"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Temperature by Sensor ID=3",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperature_api}}/temperature/3",
+                            "host": ["{{temperature_api}}"],
+                            "path": ["temperature", "3"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Temperature by Location (query param)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperature_api}}/temperature?location=Kitchen",
+                            "host": ["{{temperature_api}}"],
+                            "path": ["temperature"],
+                            "query": [{"key": "location", "value": "Kitchen"}]
+                        },
+                        "description": "Получить температуру по названию локации: Living Room, Bedroom, Kitchen"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Temperature by sensor_id (query param)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperature_api}}/temperature?sensor_id=3",
+                            "host": ["{{temperature_api}}"],
+                            "path": ["temperature"],
+                            "query": [{"key": "sensor_id", "value": "3"}]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "3. Device Service (:8082)",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{device_service}}/health",
+                            "host": ["{{device_service}}"],
+                            "path": ["health"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Devices",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{device_service}}/api/v1/devices",
+                            "host": ["{{device_service}}"],
+                            "path": ["api", "v1", "devices"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Devices by homeId",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{device_service}}/api/v1/devices?homeId=home-1",
+                            "host": ["{{device_service}}"],
+                            "path": ["api", "v1", "devices"],
+                            "query": [{"key": "homeId", "value": "home-1"}]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Device by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{device_service}}/api/v1/devices/1",
+                            "host": ["{{device_service}}"],
+                            "path": ["api", "v1", "devices", "1"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Register Device",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Living Room Thermostat\",\n    \"serialNumber\": \"SN-001-THERMO\",\n    \"deviceType\": \"thermostat\",\n    \"homeId\": \"home-1\",\n    \"roomId\": \"living-room\",\n    \"firmwareVersion\": \"1.0.0\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{device_service}}/api/v1/devices",
+                            "host": ["{{device_service}}"],
+                            "path": ["api", "v1", "devices"]
+                        },
+                        "description": "Зарегистрировать устройство. Публикует событие device.registered в RabbitMQ"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Device Status",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"online\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{device_service}}/api/v1/devices/1",
+                            "host": ["{{device_service}}"],
+                            "path": ["api", "v1", "devices", "1"]
+                        },
+                        "description": "Обновить устройство. Если статус изменился — публикует device.status_changed в RabbitMQ"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Device",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{device_service}}/api/v1/devices/1",
+                            "host": ["{{device_service}}"],
+                            "path": ["api", "v1", "devices", "1"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "4. Telemetry Service (:8083)",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{telemetry_service}}/health",
+                            "host": ["{{telemetry_service}}"],
+                            "path": ["health"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Ingest Reading",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"sensorId\": 1,\n    \"value\": 22.5,\n    \"unit\": \"celsius\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{telemetry_service}}/api/v1/telemetry",
+                            "host": ["{{telemetry_service}}"],
+                            "path": ["api", "v1", "telemetry"]
+                        },
+                        "description": "Записать показание сенсора напрямую через HTTP (в обход RabbitMQ)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Latest Reading",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{telemetry_service}}/api/v1/telemetry/1/latest",
+                            "host": ["{{telemetry_service}}"],
+                            "path": ["api", "v1", "telemetry", "1", "latest"]
+                        },
+                        "description": "Последнее показание для sensorId=1"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get History",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{telemetry_service}}/api/v1/telemetry/1/history",
+                            "host": ["{{telemetry_service}}"],
+                            "path": ["api", "v1", "telemetry", "1", "history"]
+                        },
+                        "description": "История показаний для sensorId=1 с avg/min/max"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get History with limit",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{telemetry_service}}/api/v1/telemetry/1/history?limit=5",
+                            "host": ["{{telemetry_service}}"],
+                            "path": ["api", "v1", "telemetry", "1", "history"],
+                            "query": [{"key": "limit", "value": "5"}]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get History with date range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{telemetry_service}}/api/v1/telemetry/1/history?from=2025-01-01T00:00:00Z",
+                            "host": ["{{telemetry_service}}"],
+                            "path": ["api", "v1", "telemetry", "1", "history"],
+                            "query": [{"key": "from", "value": "2025-01-01T00:00:00Z"}]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "5. E2E — Полный сценарий",
+            "item": [
+                {
+                    "name": "Шаг 1 — Обновить значение сенсора",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"value\": 24.0,\n    \"status\": \"active\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors/1/value",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors", "1", "value"]
+                        },
+                        "description": "Монолит → RabbitMQ → telemetry-service сохраняет показание"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Шаг 2 — Проверить что показание появилось в telemetry",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{telemetry_service}}/api/v1/telemetry/1/latest",
+                            "host": ["{{telemetry_service}}"],
+                            "path": ["api", "v1", "telemetry", "1", "latest"]
+                        },
+                        "description": "Должно вернуть последнее показание с value=24.0"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Шаг 3 — Зарегистрировать устройство",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Bedroom Sensor\",\n    \"serialNumber\": \"SN-002-SENSOR\",\n    \"deviceType\": \"temperature_sensor\",\n    \"homeId\": \"home-1\",\n    \"roomId\": \"bedroom\",\n    \"firmwareVersion\": \"2.1.0\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{device_service}}/api/v1/devices",
+                            "host": ["{{device_service}}"],
+                            "path": ["api", "v1", "devices"]
+                        },
+                        "description": "device-service → RabbitMQ event device.registered"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Шаг 4 — Получить температуру по локации",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{monolith}}/api/v1/sensors/temperature/Bedroom",
+                            "host": ["{{monolith}}"],
+                            "path": ["api", "v1", "sensors", "temperature", "Bedroom"]
+                        },
+                        "description": "Монолит → temperature-api → возвращает данные для Bedroom (sensor_id=2)"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {"type": "text/javascript", "exec": [""]}
+        },
+        {
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [""]}
+        }
+    ]
+}
