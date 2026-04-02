@@ -1,18 +1,11 @@
 module smarthome
 
-<<<<<<< HEAD
-go 1.20
-=======
 go 1.22
->>>>>>> origin/main
 
 require (
 	github.com/gin-gonic/gin v1.8.2
 	github.com/jackc/pgx/v5 v5.3.1
-<<<<<<< HEAD
 	github.com/rabbitmq/amqp091-go v1.9.0
-=======
->>>>>>> origin/main
 )
 
 require (
