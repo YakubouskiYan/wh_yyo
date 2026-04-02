@@ -24,4 +24,16 @@ public interface TelemetryReadingRepository extends JpaRepository<TelemetryReadi
 
     @Query("SELECT r FROM TelemetryReading r WHERE r.sensorId = :sensorId AND r.recordedAt >= :from AND r.recordedAt <= :to ORDER BY r.recordedAt DESC")
     List<TelemetryReading> findHistoryBetween(@Param("sensorId") Integer sensorId, @Param("from") OffsetDateTime from, @Param("to") OffsetDateTime to, Pageable pageable);
+
+    default List<TelemetryReading> findHistory(Integer sensorId, OffsetDateTime from, OffsetDateTime to, Pageable pageable) {
+        if (from != null && to != null) {
+            return findHistoryBetween(sensorId, from, to, pageable);
+        } else if (from != null) {
+            return findHistoryFrom(sensorId, from, pageable);
+        } else if (to != null) {
+            return findHistoryTo(sensorId, to, pageable);
+        } else {
+            return findBySensorIdOrderByRecordedAtDesc(sensorId, pageable);
+        }
+    }
 }

@@ -53,16 +53,7 @@ public class TelemetryServiceImpl implements TelemetryService {
     @Transactional(readOnly = true)
     public HistoryResponse getHistory(Integer sensorId, OffsetDateTime from, OffsetDateTime to, int limit) {
         PageRequest page = PageRequest.of(0, limit);
-        List<TelemetryReading> readings;
-        if (from != null && to != null) {
-            readings = repository.findHistoryBetween(sensorId, from, to, page);
-        } else if (from != null) {
-            readings = repository.findHistoryFrom(sensorId, from, page);
-        } else if (to != null) {
-            readings = repository.findHistoryTo(sensorId, to, page);
-        } else {
-            readings = repository.findBySensorIdOrderByRecordedAtDesc(sensorId, page);
-        }
+        List<TelemetryReading> readings = repository.findHistory(sensorId, from, to, page);
 
         List<ReadingResponse> responses = readings.stream().map(this::toResponse).toList();
 
