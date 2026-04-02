@@ -1,0 +1,88 @@
+@startuml ER_Diagram_Warmhouse
+
+title ER-диаграмма — Warmhouse Platform
+
+skinparam linetype ortho
+skinparam EntityBackgroundColor #FEFEFE
+skinparam EntityBorderColor #999999
+skinparam ArrowColor #555555
+
+' ─────────────────────────────────────────
+' Концептуальные сущности (будущие домены)
+' ─────────────────────────────────────────
+
+entity "User" as user {
+    * id : SERIAL <<PK>>
+    --
+    * name : VARCHAR(100)
+    * email : VARCHAR(150) <<UNIQUE>>
+    * role : VARCHAR(20)
+    * created_at : TIMESTAMPTZ
+}
+
+entity "House" as house {
+    * id : SERIAL <<PK>>
+    --
+    * user_id : INTEGER <<FK>>
+    * name : VARCHAR(100)
+    * address : VARCHAR(255)
+    * created_at : TIMESTAMPTZ
+}
+
+' ─────────────────────────────────────────
+' Монолит (схема public)
+' ─────────────────────────────────────────
+
+entity "sensors\n(public)" as sensor {
+    * id : SERIAL <<PK>>
+    --
+    * name : VARCHAR(100)
+    * type : VARCHAR(50)
+    * location : VARCHAR(100)
+    value : FLOAT
+    unit : VARCHAR(20)
+    * status : VARCHAR(20)
+    * last_updated : TIMESTAMPTZ
+    * created_at : TIMESTAMPTZ
+}
+
+' ─────────────────────────────────────────
+' Device Service (схема device_service)
+' ─────────────────────────────────────────
+
+entity "devices\n(device_service)" as device {
+    * id : SERIAL <<PK>>
+    --
+    * name : VARCHAR(100)
+    * serial_number : VARCHAR(100) <<UNIQUE>>
+    * device_type : VARCHAR(50)
+    home_id : VARCHAR(50)
+    room_id : VARCHAR(50)
+    firmware_version : VARCHAR(20)
+    * status : VARCHAR(20)
+    * registered_at : TIMESTAMPTZ
+}
+
+' ─────────────────────────────────────────
+' Telemetry Service (схема telemetry_service)
+' ─────────────────────────────────────────
+
+entity "readings\n(telemetry_service)" as reading {
+    * id : BIGSERIAL <<PK>>
+    --
+    * sensor_id : INTEGER <<FK>>
+    * value : DOUBLE PRECISION
+    unit : VARCHAR(20)
+    * recorded_at : TIMESTAMPTZ
+}
+
+' ─────────────────────────────────────────
+' Связи
+' ─────────────────────────────────────────
+
+user ||--o{ house       : "владеет\n(1 пользователь — N домов)"
+house ||--o{ sensor     : "содержит\n(1 дом — N датчиков)"
+house ||--o{ device     : "содержит\n(1 дом — N устройств)"
+sensor ||--o{ reading   : "генерирует\n(1 датчик — N показаний)"
+
+@enduml

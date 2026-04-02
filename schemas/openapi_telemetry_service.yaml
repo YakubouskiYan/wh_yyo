@@ -1,0 +1,224 @@
+openapi: 3.0.3
+info:
+  title: Telemetry Service API
+  description: REST API для приёма, хранения и получения показаний датчиков
+  version: 1.0.0
+servers:
+  - url: http://localhost:8083
+    description: Local development
+
+paths:
+
+  /api/v1/telemetry:
+    post:
+      summary: Принять показание датчика
+      operationId: ingestReading
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestReadingRequest'
+            example:
+              sensorId: 1
+              value: 22.5
+              unit: "celsius"
+      responses:
+        '201':
+          description: Показание сохранено
+          headers:
+            Location:
+              description: URL для получения последнего показания датчика
+              schema:
+                type: string
+                example: "/api/v1/telemetry/1/latest"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingResponse'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /api/v1/telemetry/{sensorId}/latest:
+    get:
+      summary: Получить последнее показание датчика
+      operationId: getLatestReading
+      parameters:
+        - name: sensorId
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Последнее показание найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingResponse'
+              example:
+                id: 42
+                sensorId: 1
+                value: 22.5
+                unit: "celsius"
+                recordedAt: "2026-03-24T10:00:00Z"
+        '404':
+          description: Показания для данного датчика не найдены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "No readings for sensor 1"
+
+  /api/v1/telemetry/{sensorId}/history:
+    get:
+      summary: Получить историю показаний с фильтрацией и статистикой
+      operationId: getHistory
+      parameters:
+        - name: sensorId
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - name: from
+          in: query
+          description: Начало периода (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+            example: "2026-03-23T00:00:00Z"
+        - name: to
+          in: query
+          description: Конец периода (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+            example: "2026-03-24T23:59:59Z"
+        - name: limit
+          in: query
+          description: Максимальное количество записей (1–1000, по умолчанию 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        '200':
+          description: История показаний
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryResponse'
+              example:
+                sensorId: 1
+                readings:
+                  - id: 42
+                    sensorId: 1
+                    value: 22.5
+                    unit: "celsius"
+                    recordedAt: "2026-03-24T10:00:00Z"
+                  - id: 41
+                    sensorId: 1
+                    value: 21.8
+                    unit: "celsius"
+                    recordedAt: "2026-03-24T09:00:00Z"
+                average: 22.15
+                min: 21.8
+                max: 22.5
+
+  /health:
+    get:
+      summary: Проверка работоспособности сервиса
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Сервис работает
+          content:
+            application/json:
+              example:
+                status: "ok"
+                service: "telemetry-service"
+
+components:
+  schemas:
+
+    IngestReadingRequest:
+      type: object
+      required:
+        - sensorId
+        - value
+      properties:
+        sensorId:
+          type: integer
+          example: 1
+        value:
+          type: number
+          format: double
+          example: 22.5
+        unit:
+          type: string
+          example: "celsius"
+
+    ReadingResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 42
+        sensorId:
+          type: integer
+          example: 1
+        value:
+          type: number
+          format: double
+          example: 22.5
+        unit:
+          type: string
+          example: "celsius"
+        recordedAt:
+          type: string
+          format: date-time
+          example: "2026-03-24T10:00:00Z"
+
+    HistoryResponse:
+      type: object
+      properties:
+        sensorId:
+          type: integer
+          example: 1
+        readings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReadingResponse'
+        average:
+          type: number
+          format: double
+          nullable: true
+          example: 22.15
+        min:
+          type: number
+          format: double
+          nullable: true
+          example: 21.8
+        max:
+          type: number
+          format: double
+          nullable: true
+          example: 22.5
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "No readings for sensor 1"

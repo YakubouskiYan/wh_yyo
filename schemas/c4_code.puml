@@ -1,0 +1,86 @@
+@startuml C4_Code_DeviceService
+
+title Code Diagram — Device Service (ключевые классы)
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam ArrowColor #555555
+skinparam ClassBackgroundColor #FEFEFE
+skinparam ClassBorderColor #999999
+
+interface "DeviceRepository\n<<JpaRepository>>" as DeviceRepository {
+    + findAll() : List<Device>
+    + findById(id) : Optional<Device>
+    + findByHomeId(homeId) : List<Device>
+    + findByRoomId(roomId) : List<Device>
+    + findByDeviceType(type) : List<Device>
+    + findByStatus(status) : List<Device>
+    + existsBySerialNumber(sn) : boolean
+    + save(device) : Device
+    + deleteById(id) : void
+}
+
+class "Device\n<<@Entity>>" as Device {
+    - id : Long
+    - name : String
+    - serialNumber : String
+    - deviceType : String
+    - homeId : String
+    - roomId : String
+    - firmwareVersion : String
+    - status : String
+    - registeredAt : OffsetDateTime
+}
+
+class "DeviceService\n<<@Service>>" as DeviceService {
+    - deviceRepository : DeviceRepository
+    - eventPublisher : DeviceEventPublisher
+    + findAll(homeId, roomId, type, status) : List<Device>
+    + findById(id) : Device
+    + register(request) : Device
+    + update(id, request) : Device
+    + delete(id) : void
+}
+
+class "DeviceController\n<<@RestController>>" as DeviceController {
+    - deviceService : DeviceService
+    + list(homeId, roomId, type, status) : List<Device>
+    + getById(id) : ResponseEntity<Device>
+    + register(request) : ResponseEntity<?>
+    + update(id, request) : ResponseEntity<?>
+    + delete(id) : ResponseEntity<Void>
+    + health() : Map<String,String>
+}
+
+class "DeviceEventPublisher\n<<@Component>>" as DeviceEventPublisher {
+    - rabbitTemplate : RabbitTemplate
+    - exchange : String
+    + publishDeviceRegistered(device) : void
+    + publishDeviceStatusChanged(device, prevStatus) : void
+}
+
+class "CreateDeviceRequest\n<<DTO>>" as CreateDeviceRequest {
+    - name : String
+    - serialNumber : String
+    - deviceType : String
+    - homeId : String
+    - roomId : String
+    - firmwareVersion : String
+}
+
+class "UpdateDeviceRequest\n<<DTO>>" as UpdateDeviceRequest {
+    - name : String
+    - homeId : String
+    - roomId : String
+    - firmwareVersion : String
+    - status : String
+}
+
+DeviceController --> DeviceService : использует
+DeviceService --> DeviceRepository : читает / пишет
+DeviceService --> DeviceEventPublisher : публикует события
+DeviceRepository --> Device : управляет
+DeviceController ..> CreateDeviceRequest : принимает (POST)
+DeviceController ..> UpdateDeviceRequest : принимает (PUT)
+
+@enduml

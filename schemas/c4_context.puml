@@ -1,0 +1,22 @@
+@startuml C4_Context_Warmhouse
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title System Context — Warmhouse (As-Is)
+
+Person(user, "Пользователь", "Владелец умного дома.\nПросматривает температуру,\nуправляет датчиками через API.")
+
+Person(installer, "Специалист по установке", "Выездной сотрудник.\nВручную регистрирует датчики\nи устройства в системе.")
+
+System(warmhouse, "Warmhouse Monolith", "Go-монолит на базе Gin.\nУправляет датчиками: CRUD, мониторинг\nтемпературы, обновление статусов.")
+
+System_Ext(tempApi, "Temperature API", "Внешний mock-сервис (Python/Flask).\nВозвращает случайные показания\nтемпературы по location/sensor_id.")
+
+System_Ext(postgres, "PostgreSQL", "Реляционная СУБД.\nХранит данные датчиков:\nимя, тип, локация, статус, значение.")
+
+Rel(user, warmhouse, "Управляет датчиками,\nпросматривает температуру", "REST HTTP / JSON")
+Rel(installer, warmhouse, "Регистрирует датчики\nи устройства", "REST HTTP / JSON")
+Rel(warmhouse, tempApi, "Запрашивает актуальные\nпоказания температуры", "REST HTTP / JSON")
+Rel(warmhouse, postgres, "Читает и записывает\nданные датчиков", "TCP / SQL (pgx)")
+
+@enduml
